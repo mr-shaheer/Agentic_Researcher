@@ -1,0 +1,11 @@
+[project]
+name = "research-agent"
+version = "0.1.0"
+description = "Multi-agent research pipeline using OpenAI Agents SDK with Gemini models"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openai-agents>=0.17.5",
+    "tavily-python>=0.7.26",
+    "python-dotenv>=1.2.2"
+]
