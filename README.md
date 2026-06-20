@@ -2,6 +2,7 @@
 
 <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" />
 <img src="https://img.shields.io/badge/OpenAI_Agents_SDK-0.17.5-412991?style=for-the-badge&logo=openai&logoColor=white" />
+<img src="https://img.shields.io/badge/Gemini-API-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white" />
 <img src="https://img.shields.io/badge/Tavily-Search-FF6B35?style=for-the-badge&logoColor=white" />
 <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
 
@@ -27,7 +28,7 @@ It uses a **multi-agent architecture** where three specialized agents collaborat
 - 🔎 A **Researcher** hits the live web via Tavily to gather up-to-date sources
 - ✍️ A **Writer** synthesizes everything into a clean, readable report
 
-All of this is orchestrated by a central supervisor agent built on the **OpenAI Agents SDK (v0.17.5)**.
+All of this is orchestrated by a central supervisor agent built on the **OpenAI Agents SDK (v0.17.5)**, running on **Google Gemini** models via Gemini's OpenAI-compatible endpoint.
 
 > Think of it as hiring a research assistant who never sleeps, never skips sources, and always delivers on time.
 
@@ -41,7 +42,7 @@ All of this is orchestrated by a central supervisor agent built on the **OpenAI 
 | 🔎 **Live Web Search** | Powered by Tavily API — results are current, not cached |
 | 🛡️ **Input Guardrails** | Validates and filters queries before they enter the pipeline |
 | 📝 **Conversation History** | Research context is persisted in `conversation_history.txt` across sessions |
-| ⚙️ **Configurable Models** | Swap OpenAI models for any agent via a single `model.py` file |
+| ⚙️ **Configurable Models** | Swap Gemini models for any agent via a single `model.py` file |
 
 ---
 
@@ -80,13 +81,15 @@ Each agent is isolated — it only sees what it needs. This keeps outputs focuse
 
 | Package | Version | Role |
 |---|---|---|
-| `openai-agents` | 0.17.5 | Multi-agent framework and run loop |
-| `openai` | 2.41.1 | OpenAI API client (GPT models) |
+| `openai-agents` | 0.17.5 | Multi-agent framework and run loop (model-agnostic — pointed at Gemini below) |
+| `google-genai` / `openai` | latest | Gemini client — used via Gemini's OpenAI-compatible endpoint |
 | `tavily-python` | 0.7.26 | Live web search API |
 | `pydantic-settings` | 2.14.1 | `.env` configuration management |
 | `python-dotenv` | 1.2.2 | Environment variable loading |
 
-> **Models:** This project uses **OpenAI GPT models** (default: `gpt-4o`). Model selection is configured in `model.py`.
+> **Models:** This project uses **Google Gemini models** (default: `gemini-2.5-flash`). Model selection is configured in `model.py`.
+>
+> **How Gemini is wired in:** the OpenAI Agents SDK talks to Gemini through Gemini's OpenAI-compatible endpoint — point the SDK's OpenAI client at `base_url="https://generativelanguage.googleapis.com/v1beta/openai/"` with your `GEMINI_API_KEY` as the API key, then pass Gemini model names (e.g. `gemini-2.5-flash`, `gemini-3.5-flash`) — no other code changes needed.
 
 ---
 
@@ -96,7 +99,7 @@ Each agent is isolated — it only sees what it needs. This keeps outputs focuse
 
 - Python **3.12+**
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/) package manager (recommended)
-- API keys for [OpenAI](https://platform.openai.com/api-keys) and [Tavily](https://app.tavily.com/)
+- API keys for [Google AI Studio / Gemini](https://aistudio.google.com/apikey) and [Tavily](https://app.tavily.com/)
 
 ### Steps
 
@@ -182,28 +185,40 @@ The Writer agent produces a structured report along these lines:
 Create a `.env` file at the project root:
 
 ```env
-# Required — OpenAI API key for all agents
-OPENAI_API_KEY=sk-...
+# Required — Gemini API key for all agents
+GEMINI_API_KEY=AIza...
 
 # Required — Tavily API key for web search
 TAVILY_API_KEY=tvly-...
 ```
 
 Get your keys here:
-- OpenAI: https://platform.openai.com/api-keys
+- Gemini: https://aistudio.google.com/apikey
 - Tavily: https://app.tavily.com/
 
 ### Model Configuration
 
-Edit `model.py` to change which OpenAI model each agent uses:
+Edit `model.py` to change which Gemini model each agent uses, and to point the OpenAI Agents SDK at Gemini:
 
 ```python
 # model.py
-MODEL = "gpt-4o"             # Used by Main Agent, Planner, and Writer
-RESEARCHER_MODEL = "gpt-4o"  # Used by the Researcher agent
+from openai import AsyncOpenAI
+from agents import set_default_openai_client, set_default_openai_api, set_tracing_disabled
+
+# Point the SDK's OpenAI client at Gemini's OpenAI-compatible endpoint
+gemini_client = AsyncOpenAI(
+    api_key="YOUR_GEMINI_API_KEY",
+    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+)
+set_default_openai_client(gemini_client)
+set_default_openai_api("chat_completions")
+set_tracing_disabled(True)  # tracing expects an OpenAI key, so disable it for Gemini
+
+MODEL = "gemini-2.5-flash"             # Used by Main Agent, Planner, and Writer
+RESEARCHER_MODEL = "gemini-2.5-flash"  # Used by the Researcher agent
 ```
 
-You can use any model available through the OpenAI API (e.g. `gpt-4o-mini` for lower cost, `o1` for heavier reasoning tasks).
+You can use any Gemini model available through the API (e.g. `gemini-2.5-flash-lite` for speed/cost, `gemini-2.5-flash` for heavier reasoning tasks).
 
 ---
 
@@ -220,7 +235,7 @@ Agentic_Researcher/
 │
 ├── main.py                  # Entry point — run this to start a research session
 ├── tool.py                  # Tool definitions — Tavily search registered as @function_tool
-├── model.py                 # Model config — set OpenAI models per agent here
+├── model.py                 # Model config — Gemini client + model names per agent
 ├── guardrail.py             # Input validation — filters bad or off-scope queries
 │
 ├── conversation_history.txt # Persisted conversation context across sessions
@@ -281,7 +296,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 
 <div align="center">
 
-Built with ❤️ using the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python)
+Built with ❤️ using the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) + [Google Gemini](https://ai.google.dev/)
 
 ⭐ Star this repo if you found it useful!
 
