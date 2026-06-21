@@ -202,20 +202,26 @@ Edit `model.py` to change which Gemini model each agent uses, and to point the O
 
 ```python
 # model.py
-from openai import AsyncOpenAI
-from agents import set_default_openai_client, set_default_openai_api, set_tracing_disabled
+import os
+from agents import AsyncOpenAI, OpenAIChatCompletionsModel
+from dotenv import load_dotenv, find_dotenv
 
-# Point the SDK's OpenAI client at Gemini's OpenAI-compatible endpoint
-gemini_client = AsyncOpenAI(
-    api_key="YOUR_GEMINI_API_KEY",
-    base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+load_dotenv()
+
+external_client = AsyncOpenAI(
+    api_key = os.getenv("GEMINI_API_KEY"),
+    base_url = "https://generativelanguage.googleapis.com/v1beta/openai/",
 )
-set_default_openai_client(gemini_client)
-set_default_openai_api("chat_completions")
-set_tracing_disabled(True)  # tracing expects an OpenAI key, so disable it for Gemini
 
-MODEL = "gemini-2.5-flash"             # Used by Main Agent, Planner, and Writer
-RESEARCHER_MODEL = "gemini-2.5-flash"  # Used by the Researcher agent
+high_model = OpenAIChatCompletionsModel(
+    model = "gemini-2.5-flash",
+    openai_client=external_client
+)
+
+low_model = OpenAIChatCompletionsModel(
+    model = "gemini-2.5-flash-lite",
+    openai_client = external_client
+)
 ```
 
 You can use any Gemini model available through the API (e.g. `gemini-2.5-flash-lite` for speed/cost, `gemini-2.5-flash` for heavier reasoning tasks).
