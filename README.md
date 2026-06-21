@@ -263,18 +263,6 @@ Before any agent runs, incoming queries are validated by the guardrail layer. Qu
 
 ---
 
-## 🗺️ Roadmap
-
-- [ ] Rich CLI output with progress indicators and formatted report display
-- [ ] Export reports as PDF or HTML
-- [ ] Additional search tools (Wikipedia, arXiv, news APIs)
-- [ ] Caching layer to skip redundant searches on similar queries
-- [ ] Source citation tracking and credibility scoring
-- [ ] Web UI built with Streamlit or Gradio
-- [ ] Async parallel search across multiple queries simultaneously
-
----
-
 ## 🤝 Contributing
 
 Contributions are welcome — bug fixes, new tools, or new agent types.
