@@ -190,11 +190,16 @@ GEMINI_API_KEY=AIza...
 
 # Required — Tavily API key for web search
 TAVILY_API_KEY=tvly-...
+
+# Required — OpenAI API key, used only for Agents SDK tracing
+# (not used for inference; Gemini handles all model calls)
+OPENAI_API_KEY=sk-...
 ```
 
 Get your keys here:
 - Gemini: https://aistudio.google.com/apikey
 - Tavily: https://app.tavily.com/
+- OpenAI (tracing only): https://platform.openai.com/api-keys
 
 ### Model Configuration
 
