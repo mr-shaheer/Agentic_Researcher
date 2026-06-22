@@ -1,4 +1,5 @@
 import asyncio
+import os, json
 from agents import Runner, RunConfig
 from core_agents.main_agent import triage_agent
 from guardrail import ResearchCheckOutput
@@ -7,9 +8,16 @@ from agents.result import RunResultStreaming
 from agents.stream_events import RawResponsesStreamEvent, RunItemStreamEvent, AgentUpdatedStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
 
+MAX_HISTORY = 10
+HISTORY_FILE = "conversation_history.txt"
+MEMORY_FILE = "conversation_memory.json"
+
 async def main():
 
     print("Research Assistant ready. Type 'quit' to exit.\n")
+
+    conversation_history = json.load(open(MEMORY_FILE)) if os.path.exists(MEMORY_FILE) else []
+
 
 
     while True:
@@ -57,20 +65,14 @@ async def main():
             
             print("\n")
 
+            conversation_history.append({"user": user_input, "assistant": result.final_output or ""})
+            conversation_history = conversation_history[-MAX_HISTORY:]
 
-            history_file = "conversation_history.txt"
-            entry = f"USER: {user_input}\n\nASSISTANT:\n{result.final_output}\n\n---\n"
-            with open(history_file, "a", encoding="utf-8") as f:
-                f.write(entry)
+            json.dump(conversation_history, open(MEMORY_FILE, "w"))
 
-            with open(history_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            blocks = content.split("\n---\n")
-            if len(blocks) > 10:
-                with open(history_file, "w", encoding="utf-8") as f:
-                    f.write("\n---\n".join(blocks[-10:]))
-
-        
+            with open(HISTORY_FILE, "a", encoding="utf-8") as f:
+                f.write(f"USER: {user_input}\n\nASSISTANT:\n{result.final_output or ''}\n\n---\n\n")
+                
         except InputGuardrailTripwireTriggered as e:
             check: ResearchCheckOutput = e.guardrail_result.output.output_info
             print(f"Sorry! i can't help with this request.\nReason : {check.reasoning}\n")
