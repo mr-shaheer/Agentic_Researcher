@@ -13,3 +13,4 @@ wheels/
 
 # Conversation history
 conversation_history.txt
+conversation_history.json
