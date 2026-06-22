@@ -12,7 +12,6 @@ async def main():
     print("Research Assistant ready. Type 'quit' to exit.\n")
 
 
-
     while True:
         user_input = input("You: ").strip()
 
