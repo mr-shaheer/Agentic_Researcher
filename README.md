@@ -36,6 +36,20 @@ All of this is orchestrated by a central supervisor agent built on the **OpenAI 
 
 ---
 
+## 💸 Free to Run
+
+This project is designed to run at **zero cost** for personal and light use:
+
+| Service | Free Tier |
+|---|---|
+| **Gemini API** | Free via [Google AI Studio](https://aistudio.google.com/apikey) — includes `gemini-2.5-flash` with generous RPM/RPD limits |
+| **Tavily Search** | Free tier includes **1,000 searches/month** — plenty for regular research sessions |
+| **OpenAI API** | Required only for Agents SDK tracing (not inference). You can skip tracing entirely to avoid any cost — see [Configuration](#-configuration) |
+
+> **No credit card needed to get started.** Get your Gemini and Tavily keys, drop them in `.env`, and you're good to go.
+
+---
+
 ## ✨ Features
 
 | Feature | Description |
