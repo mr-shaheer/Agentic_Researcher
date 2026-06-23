@@ -1,6 +1,6 @@
 import asyncio
 import os, json
-from agents import Runner, RunConfig
+from agents import Runner, RunConfig, Agent
 from core_agents.main_agent import triage_agent
 from guardrail import ResearchCheckOutput
 from agents.exceptions import InputGuardrailTripwireTriggered
@@ -18,7 +18,7 @@ async def main():
 
     conversation_history = json.load(open(MEMORY_FILE)) if os.path.exists(MEMORY_FILE) else []
 
-
+    active_agent : Agent = triage_agent
 
     while True:
         user_input = input("You: ").strip()
@@ -28,12 +28,17 @@ async def main():
         if not user_input:
             continue
 
+        if user_input.lower() == "/reset" :
+            active_agent = triage_agent
+            print("Session Reset.\n")
+            continue
+
         print("Researcher: ", end = "", flush = True) 
 
         try :
 
             result: RunResultStreaming = Runner.run_streamed(
-            triage_agent, 
+            active_agent, 
             user_input,
             max_turns = 10,
             run_config = RunConfig(
@@ -73,6 +78,8 @@ async def main():
             with open(HISTORY_FILE, "a", encoding="utf-8") as f:
                 f.write(f"USER: {user_input}\n\nASSISTANT:\n{result.final_output or ''}\n\n---\n\n")
                 
+            active_agent = result.last_agent
+
         except InputGuardrailTripwireTriggered as e:
             check: ResearchCheckOutput = e.guardrail_result.output.output_info
             print(f"Sorry! i can't help with this request.\nReason : {check.reasoning}\n")
