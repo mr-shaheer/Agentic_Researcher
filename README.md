@@ -12,6 +12,8 @@
 
 *Drop in a topic. Get back a fully researched, well-structured report — planned, searched, and written autonomously.*
 
+> 💸 **This project can be run completely free** — Gemini API and Tavily both offer free tiers generous enough for personal use.
+
 [Features](#-features) · [Architecture](#-architecture) · [Installation](#-installation) · [Usage](#-usage) · [Configuration](#-configuration) · [Project Structure](#-project-structure) · [Roadmap](#-roadmap)
 
 </div>
