@@ -7,6 +7,7 @@ from agents.exceptions import InputGuardrailTripwireTriggered
 from agents.result import RunResultStreaming
 from agents.stream_events import RawResponsesStreamEvent, RunItemStreamEvent, AgentUpdatedStreamEvent
 from openai.types.responses import ResponseTextDeltaEvent
+from agents import SQLiteSession, SessionSettings
 
 MAX_HISTORY = 10
 HISTORY_FILE = "conversation_history.txt"
@@ -14,8 +15,9 @@ MEMORY_FILE = "conversation_memory.json"
 
 async def main():
 
-    print("Research Assistant ready. Type 'quit' to exit.\n")
+    print("Research Assistant ready. Type '/exit' or '/quit' to exit.\n")
 
+    session = SQLiteSession("default-cli", "context.db", session_settings = SessionSettings(Limit = 10))
     conversation_history = json.load(open(MEMORY_FILE)) if os.path.exists(MEMORY_FILE) else []
 
     active_agent : Agent = triage_agent
@@ -23,7 +25,7 @@ async def main():
     while True:
         user_input = input("You: ").strip()
 
-        if user_input.lower() in ("quit", "exit"):
+        if user_input.lower() in ("/quit", "/exit"):
             break
         if not user_input:
             continue
@@ -41,6 +43,7 @@ async def main():
             active_agent, 
             user_input,
             max_turns = 10,
+            session = session,
             run_config = RunConfig(
                 workflow_name = "Researcher Agent"
             )
