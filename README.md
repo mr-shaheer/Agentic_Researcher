@@ -12,6 +12,8 @@
 
 *Drop in a topic. Get back a fully researched, well-structured report — planned, searched, and written autonomously.*
 
+> 💸 **This project can be run completely free** — Gemini API and Tavily both offer free tiers generous enough for personal use.
+
 [Features](#-features) · [Architecture](#-architecture) · [Installation](#-installation) · [Usage](#-usage) · [Configuration](#-configuration) · [Project Structure](#-project-structure) · [Roadmap](#-roadmap)
 
 </div>
@@ -34,6 +36,20 @@ All of this is orchestrated by a central supervisor agent built on the **OpenAI 
 
 ---
 
+## 💸 Free to Run
+
+This project is designed to run at **zero cost** for personal and light use:
+
+| Service | Free Tier |
+|---|---|
+| **Gemini API** | Free via [Google AI Studio](https://aistudio.google.com/apikey) — includes `gemini-2.5-flash` with generous RPM/RPD limits |
+| **Tavily Search** | Free tier includes **1,000 searches/month** — plenty for regular research sessions |
+| **OpenAI API** | Required only for Agents SDK tracing (not inference). You can skip tracing entirely to avoid any cost — see [Configuration](#-configuration) |
+
+> **No credit card needed to get started.** Get your Gemini and Tavily keys, drop them in `.env`, and you're good to go.
+
+---
+
 ## ✨ Features
 
 | Feature | Description |
@@ -43,6 +59,7 @@ All of this is orchestrated by a central supervisor agent built on the **OpenAI 
 | 🛡️ **Input Guardrails** | Validates and filters queries before they enter the pipeline |
 | 📝 **Conversation History** | Research context is persisted in `conversation_history.txt` across sessions |
 | ⚙️ **Configurable Models** | Swap Gemini models for any agent via a single `model.py` file |
+| 💸 **Free to Use** | Runs entirely on free-tier APIs — no billing setup required for personal use |
 
 ---
 
@@ -185,10 +202,10 @@ The Writer agent produces a structured report along these lines:
 Create a `.env` file at the project root:
 
 ```env
-# Required — Gemini API key for all agents
+# Required — Gemini API key for all agents (free at aistudio.google.com)
 GEMINI_API_KEY=AIza...
 
-# Required — Tavily API key for web search
+# Required — Tavily API key for web search (free tier: 1,000 searches/month)
 TAVILY_API_KEY=tvly-...
 
 # Required — OpenAI API key, used only for Agents SDK tracing
@@ -196,10 +213,10 @@ TAVILY_API_KEY=tvly-...
 OPENAI_API_KEY=sk-...
 ```
 
-Get your keys here:
-- Gemini: https://aistudio.google.com/apikey
-- Tavily: https://app.tavily.com/
-- OpenAI (tracing only): https://platform.openai.com/api-keys
+Get your free keys here:
+- **Gemini** (free): https://aistudio.google.com/apikey
+- **Tavily** (free tier): https://app.tavily.com/
+- **OpenAI** (optional, tracing only): https://platform.openai.com/api-keys
 
 ### Model Configuration
 
@@ -229,7 +246,7 @@ low_model = OpenAIChatCompletionsModel(
 )
 ```
 
-You can use any Gemini model available through the API (e.g. `gemini-2.5-flash-lite` for speed/cost, `gemini-2.5-flash` for heavier reasoning tasks).
+You can use any Gemini model available through the API (e.g. `gemini-2.5-flash-lite` for speed/cost, `gemini-2.5-flash` for heavier reasoning tasks). Both are available on the free tier.
 
 ---
 
