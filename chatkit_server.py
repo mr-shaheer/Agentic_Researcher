@@ -9,11 +9,11 @@ chatkit.agents helpers.
 from datetime import datetime
 from typing import AsyncIterator
 
-from agents import Agent, Runner
+from agents import Agent, Runner, SQLiteSession, SessionSettings, RunConfig
 from agents.exceptions import InputGuardrailTripwireTriggered
 from agents.result import RunResultStreaming
 
-from chatkit.agents import AgentContext, simple_to_agent_input, stream_agent_response
+from chatkit.agents import AgentContext, stream_agent_response
 from chatkit.server import ChatKitServer
 from chatkit.types import (
     AssistantMessageContent,
@@ -40,12 +40,20 @@ AGENTS_BY_NAME: dict[str, Agent] = {
     "Writer_Agent": writer_agent,
 }
 
-MAX_THREAD_ITEMS = 40  # how many past items to feed back into the agent as context
+# Same session ID + db file that main.py's CLI uses, so the CLI and the
+# ChatKit web UI share one conversation history.
+SHARED_SESSION_ID = "default-cli"
+SHARED_SESSION_DB = "context.db"
 
 
 class ResearchChatKitServer(ChatKitServer[dict]):
     def __init__(self):
         super().__init__(store=MemoryStore())
+        self.session = SQLiteSession(
+            SHARED_SESSION_ID,
+            SHARED_SESSION_DB,
+            session_settings=SessionSettings(Limit=10),
+        )
 
     async def respond(
         self,
@@ -54,23 +62,24 @@ class ResearchChatKitServer(ChatKitServer[dict]):
         context: dict,
     ) -> AsyncIterator[ThreadStreamEvent]:
 
-        # Pull recent thread history and convert it to Agents SDK input items.
-        items_page = await self.store.load_thread_items(
-            thread.id, after=None, limit=MAX_THREAD_ITEMS, order="asc", context=context,
-        )
-        input_items = await simple_to_agent_input(items_page.data)
-
         # Resume wherever the last turn left off (e.g. mid-handoff at Researcher_Agent).
         agent_name = (thread.metadata or {}).get("active_agent", "Triage_Agent")
         active_agent = AGENTS_BY_NAME.get(agent_name, triage_agent)
 
         agent_context = AgentContext(thread=thread, store=self.store, request_context=context)
 
+        # Just the new message text — history comes from the shared session, same as main.py.
+        user_text = input_user_message.content[0].text if input_user_message else ""
+
         try:
             result: RunResultStreaming = Runner.run_streamed(
                 active_agent,
-                input_items,
+                user_text,
                 max_turns=10,
+                session=self.session,
+                run_config = RunConfig(
+                workflow_name = "Researcher Agent"
+                ),
                 context=agent_context,
             )
 
