@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Agentic Researcher</title>
+    <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async></script>
+    <style>
+      html, body { height: 100%; margin: 0; background: #22333B; }
+      #app { display: flex; align-items: center; justify-content: center; height: 100%; }
+      openai-chatkit { width: min(760px, 92vw); height: min(85vh, 900px); border-radius: 16px; overflow: hidden }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+
+    <script>
+      function mountChatKit() {
+        if (!customElements.get("openai-chatkit")) {
+          // chatkit.js hasn't finished loading yet — try again shortly.
+          setTimeout(mountChatKit, 50);
+          return;
+        }
+
+        const chatkit = document.createElement("openai-chatkit");
+        chatkit.setOptions({
+          api: {
+            // Points at the /chatkit endpoint exposed by chatkit_app.py
+            url: "/chatkit",
+            domainKey: "local-dev", // domain keys are optional for local dev
+          },
+          composer: {
+            placeholder: "Start your research...",   // ← this is the input box placeholder
+          },
+          startScreen: {
+            greeting: "What's on your mind?",
+            prompts: [
+              { label: "Latest tech trends", prompt: "What are the biggest tech trends right now?" },
+              { label: "Health & wellness", prompt: "What does the research say about intermittent fasting?" },
+              { label: "Money & investing", prompt: "How does investing in index funds actually work?" },
+              { label: "Current events", prompt: "What's happening with AI regulation around the world?" },
+            ],
+          },
+        });
+
+        document.getElementById("app").appendChild(chatkit);
+      }
+
+      mountChatKit();
+    </script>
+  </body>
+</html>
