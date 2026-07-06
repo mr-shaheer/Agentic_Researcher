@@ -16,7 +16,6 @@
     <script>
       function mountChatKit() {
         if (!customElements.get("openai-chatkit")) {
-          // chatkit.js hasn't finished loading yet — try again shortly.
           setTimeout(mountChatKit, 50);
           return;
         }
@@ -24,12 +23,11 @@
         const chatkit = document.createElement("openai-chatkit");
         chatkit.setOptions({
           api: {
-            // Points at the /chatkit endpoint exposed by chatkit_app.py
             url: "/chatkit",
-            domainKey: "local-dev", // domain keys are optional for local dev
+            domainKey: "local-dev",
           },
           composer: {
-            placeholder: "Start your research...",   // ← this is the input box placeholder
+            placeholder: "Start your research...",
           },
           startScreen: {
             greeting: "What's on your mind?",
