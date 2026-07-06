@@ -17,7 +17,7 @@ async def main():
 
     print("Research Assistant ready. Type '/exit' or '/quit' to exit.\n")
 
-    session = SQLiteSession("default-cli", "context.db", session_settings = SessionSettings(Limit = 10))
+    session = SQLiteSession("default-cli", "context.db", session_settings = SessionSettings(limit = 10))
     conversation_history = json.load(open(MEMORY_FILE)) if os.path.exists(MEMORY_FILE) else []
 
     active_agent : Agent = triage_agent
