@@ -2,15 +2,17 @@
 
 <img src="https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white" />
 <img src="https://img.shields.io/badge/OpenAI_Agents_SDK-0.17.5-412991?style=for-the-badge&logo=openai&logoColor=white" />
+<img src="https://img.shields.io/badge/ChatKit-UI-412991?style=for-the-badge&logo=openai&logoColor=white" />
 <img src="https://img.shields.io/badge/Gemini-API-4285F4?style=for-the-badge&logo=googlegemini&logoColor=white" />
 <img src="https://img.shields.io/badge/Tavily-Search-FF6B35?style=for-the-badge&logoColor=white" />
+<img src="https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
 <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" />
 
 # 🔍 Agentic Researcher
 
 ### A coordinated pipeline of specialized AI agents — Planner, Researcher, and Writer — that autonomously delivers deep, structured research reports from a single query.
 
-*Drop in a topic. Get back a fully researched, well-structured report — planned, searched, and written autonomously.*
+*Drop in a topic. Get back a fully researched, well-structured report — planned, searched, and written autonomously. Use it from the terminal, or chat with it in the browser.*
 
 > 💸 **This project runs entirely on free tiers** — Gemini API and Tavily both offer free tiers generous enough for personal use.
 
@@ -32,7 +34,9 @@ It uses a **multi-agent architecture** where three specialized agents collaborat
 
 All of this is orchestrated by a central supervisor agent built on the **OpenAI Agents SDK (v0.17.5)**, running on **Google Gemini** models via Gemini's OpenAI-compatible endpoint.
 
-> Think of it as hiring a research assistant who never sleeps, never skips sources, and always delivers on time.
+You can drive the whole pipeline from the terminal, or through a **ChatKit-powered web chat UI** — a FastAPI server streams agent responses straight into a browser-based chat widget, so the same Planner → Researcher → Writer pipeline is now just a conversation away.
+
+> Think of it as hiring a research assistant who never sleeps, never skips sources, and always delivers on time — and now has an office you can walk into.
 
 ---
 
@@ -56,8 +60,9 @@ This project is designed to run at **zero cost** for personal and light use:
 |---|---|
 | 🧠 **Multi-Agent Orchestration** | Planner, Researcher, and Writer agents each own a distinct phase of the pipeline |
 | 🔎 **Live Web Search** | Powered by Tavily API — results are current, not cached |
-| 🛡️ **Input Guardrails** | Validates and filters queries before they enter the pipeline |
-| 📝 **Conversation History** | Research context is persisted in `conversation_history.txt` across sessions |
+| 🛡️ **Input Guardrails** | Validates and filters queries before they enter the pipeline — enforced identically in the CLI and the web UI |
+| 💬 **ChatKit Web UI** | A browser-based chat interface, streamed live via a FastAPI + ChatKit server sitting in front of the agent pipeline |
+| 📝 **Conversation History** | CLI sessions persist context via SQLite (`context.db`); the web UI persists threads and messages in a ChatKit store |
 | ⚙️ **Configurable Models** | Swap Gemini models for any agent via a single `model.py` file |
 | 💸 **Free to Use** | Runs entirely on free-tier APIs — no billing setup required for personal use |
 
@@ -65,32 +70,53 @@ This project is designed to run at **zero cost** for personal and light use:
 
 ## 🏗️ Architecture
 
-The system uses a **supervisor → specialist** pattern. A main orchestrator delegates to three agents in a strict sequence, each passing its output as context to the next.
+The system uses a **supervisor → specialist** pattern. A main orchestrator delegates to three agents in a strict sequence, each passing its output as context to the next. The pipeline is now fronted by two interchangeable entry points — a CLI and a ChatKit web server — that both drive the same agent graph.
 
 ```
-User Query
-    │
-    ▼
-┌──────────────────────────────────────┐
-│        Main Agent (Supervisor)       │
-│  Orchestrates the full pipeline and  │
-│  manages context between agents      │
-└──────────┬───────────────────────────┘
-           │
-    ┌──────▼──────┐
-    │   Planner   │  ← Decomposes the query into a structured research plan
-    └──────┬──────┘         (subtopics, search angles, scope)
-           │
-    ┌──────▼──────┐
-    │ Researcher  │  ← Executes web searches via Tavily @function_tool
-    └──────┬──────┘         (live results, ranked by relevance)
-           │
-    ┌──────▼──────┐
-    │   Writer    │  ← Synthesizes findings into a final markdown report
-    └─────────────┘         (structured, cited, human-readable)
+                     ┌────────────────────┐        ┌──────────────────────┐
+                     │   CLI (main.py)    │        │  Browser (index.html)│
+                     └──────────┬─────────┘        └──────────┬────────────┘
+                                │                              │ ChatKit widget
+                                │                              ▼
+                                │                  ┌──────────────────────────┐
+                                │                  │  chatkit_app.py (FastAPI)│
+                                │                  │  POST /chatkit — SSE     │
+                                │                  └──────────┬────────────────┘
+                                │                              │
+                                │                  ┌──────────────────────────┐
+                                │                  │ chatkit_server.py         │
+                                │                  │ ResearchChatKitServer     │
+                                │                  │ streams agent events,     │
+                                │                  │ tracks active_agent       │
+                                │                  └──────────┬────────────────┘
+                                │                              │
+                                │                  ┌──────────────────────────┐
+                                │                  │ chatkit_store.py          │
+                                │                  │ MemoryStore — threads &   │
+                                │                  │ items for the ChatKit UI  │
+                                │                  └──────────┬────────────────┘
+                                │                              │
+                                ▼                              ▼
+                     ┌──────────────────────────────────────────────┐
+                     │            Main Agent (Supervisor)            │
+                     │   Orchestrates the full pipeline and manages  │
+                     │   context between agents (shared SQLiteSession)│
+                     └──────────┬─────────────────────────────────────┘
+                                │
+                         ┌──────▼──────┐
+                         │   Planner   │  ← Decomposes the query into a structured research plan
+                         └──────┬──────┘         (subtopics, search angles, scope)
+                                │
+                         ┌──────▼──────┐
+                         │ Researcher  │  ← Executes web searches via Tavily @function_tool
+                         └──────┬──────┘         (live results, ranked by relevance)
+                                │
+                         ┌──────▼──────┐
+                         │   Writer    │  ← Synthesizes findings into a final markdown report
+                         └─────────────┘         (structured, cited, human-readable)
 ```
 
-Each agent is isolated — it only sees what it needs. This keeps outputs focused and reduces hallucination risk.
+Each agent is isolated — it only sees what it needs. This keeps outputs focused and reduces hallucination risk. On the web side, `ResearchChatKitServer` tracks which agent last responded (`active_agent` in the thread's metadata) so a multi-turn conversation stays routed to the right stage of the pipeline, and guardrail rejections are surfaced as a normal assistant message instead of a crash.
 
 ---
 
@@ -101,6 +127,8 @@ Each agent is isolated — it only sees what it needs. This keeps outputs focuse
 | `openai-agents` | 0.17.5 | Multi-agent framework and run loop (model-agnostic — pointed at Gemini below) |
 | `google-genai` / `openai` | latest | Gemini client — used via Gemini's OpenAI-compatible endpoint |
 | `tavily-python` | 0.7.26 | Live web search API |
+| `chatkit` | latest | OpenAI's ChatKit server/agent bindings — streams `RunResultStreaming` events into ChatKit's thread protocol |
+| `fastapi` | latest | Serves the `/chatkit` endpoint and the static web UI |
 | `pydantic-settings` | 2.14.1 | `.env` configuration management |
 | `python-dotenv` | 1.2.2 | Environment variable loading |
 
@@ -136,7 +164,7 @@ uv sync
 
 Or with pip:
 ```bash
-pip install openai-agents tavily-python pydantic-settings python-dotenv
+pip install openai-agents tavily-python pydantic-settings python-dotenv chatkit fastapi uvicorn
 ```
 
 **3. Set up environment variables**
@@ -150,6 +178,10 @@ Then fill in your keys (see [Configuration](#-configuration) below).
 ---
 
 ## 🚀 Usage
+
+You can run Agentic Researcher two ways: as a **CLI** session, or as a **ChatKit web app** in your browser.
+
+### CLI
 
 ```bash
 uv run python main.py
@@ -168,6 +200,14 @@ Enter your research topic: The impact of large language models on software engin
 
 ✅ Research complete. Report saved to conversation_history.txt
 ```
+
+### Web (ChatKit)
+
+```bash
+uv run uvicorn chatkit_app:app --reload
+```
+
+Then open `http://localhost:8000` in your browser. You'll land on a ChatKit chat window with starter prompts, and your messages stream through the same agent pipeline in real time — full responses render token-by-token as the Writer agent produces them, and rejected queries come back as a plain assistant message explaining why.
 
 ### Sample Output Structure
 
@@ -248,6 +288,23 @@ low_model = OpenAIChatCompletionsModel(
 
 You can use any Gemini model available through the API (e.g. `gemini-2.5-flash-lite` for speed/cost, `gemini-2.5-flash` for heavier reasoning tasks). Both are available on the free tier.
 
+### ChatKit Server Configuration
+
+`chatkit_server.py` wires the agent pipeline into ChatKit's streaming protocol:
+
+- **`AGENTS_BY_NAME`** maps agent names to their instances (`Triage_Agent`, `Planner_Agent`, `Researcher_Agent`, `Writer_Agent`) so the server can resume a thread with the correct agent.
+- **Shared session** — a single `SQLiteSession` (`context.db`) backs every ChatKit thread, keeping conversational memory consistent with the CLI's session handling.
+- **`MemoryStore`** (`chatkit_store.py`) is an in-memory implementation of ChatKit's `Store` interface — it holds threads and thread items for the lifetime of the process. Swap it for a persistent store (e.g. backed by SQLite or Postgres) if you need threads to survive a restart.
+- Attachment support (`save_attachment` / `load_attachment` / `delete_attachment`) is stubbed out and not yet implemented.
+
+The static UI is served straight off the FastAPI app:
+
+```python
+app.mount("/", StaticFiles(directory="UI", html=True), name="static")
+```
+
+So `index.html` (and any other front-end assets) should live in a `UI/` directory at the project root.
+
 ---
 
 ## 📁 Project Structure
@@ -259,14 +316,21 @@ Agentic_Researcher/
 │   ├── main_agent.py        # Supervisor — orchestrates the full pipeline
 │   ├── planner.py           # Planner — breaks query into a research strategy
 │   ├── researcher.py        # Researcher — executes web searches via Tavily
-│   └── writer.py            # Writer — synthesizes findings into a final report
+│   └── writter.py           # Writer — synthesizes findings into a final report
 │
-├── main.py                  # Entry point — run this to start a research session
+├── UI/
+│   └── index.html            # ChatKit web UI — mounted as static files by chatkit_app.py
+│
+├── main.py                  # CLI entry point — run this to start a research session in the terminal
+├── chatkit_app.py           # FastAPI app — exposes POST /chatkit and serves the web UI
+├── chatkit_server.py        # ResearchChatKitServer — streams agent responses into ChatKit's thread protocol
+├── chatkit_store.py         # MemoryStore — in-memory ChatKit Store implementation (threads & items)
 ├── tool.py                  # Tool definitions — Tavily search registered as @function_tool
 ├── model.py                 # Model config — Gemini client + model names per agent
 ├── guardrail.py             # Input validation — filters bad or off-scope queries
 │
-├── conversation_history.txt # Persisted conversation context across sessions
+├── conversation_history.txt # Persisted CLI conversation context across sessions
+├── context.db                # Shared SQLite session store (CLI + ChatKit)
 ├── pyproject.toml           # Project metadata and dependencies
 ├── uv.lock                  # Locked dependency versions (uv)
 ├── .env.example             # Template for environment variables
@@ -287,7 +351,7 @@ The Tavily search tool is exposed to the Researcher agent using the OpenAI Agent
 
 ### `guardrail.py` — Input Validation
 
-Before any agent runs, incoming queries are validated by the guardrail layer. Queries that are too vague, potentially harmful, or outside the system's scope are rejected with a clear error — keeping the pipeline clean and focused.
+Before any agent runs, incoming queries are validated by the guardrail layer. Queries that are too vague, potentially harmful, or outside the system's scope are rejected with a clear error — keeping the pipeline clean and focused. In the ChatKit server, a tripped guardrail (`InputGuardrailTripwireTriggered`) is caught and returned as a normal assistant message explaining the rejection reason, so the chat UI never just hangs or errors out.
 
 ---
 
@@ -312,7 +376,7 @@ This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for d
 
 <div align="center">
 
-Built with ❤️ using the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) + [Google Gemini](https://ai.google.dev/)
+Built with ❤️ using the [OpenAI Agents SDK](https://github.com/openai/openai-agents-python) + [ChatKit](https://github.com/openai/chatkit-python) + [Google Gemini](https://ai.google.dev/)
 
 ⭐ Star this repo if you found it useful!
 
