@@ -1,12 +1,12 @@
 from datetime import datetime
 from typing import AsyncIterator
-
 from agents import Agent, Runner, SQLiteSession, SessionSettings, RunConfig
 from agents.exceptions import InputGuardrailTripwireTriggered
 from agents.result import RunResultStreaming
 
 from chatkit.agents import AgentContext, stream_agent_response
 from chatkit.server import ChatKitServer
+from hooks import ChatKitWorkflowHooks
 from chatkit.types import (
     AssistantMessageContent,
     AssistantMessageItem,
@@ -67,6 +67,7 @@ class ResearchChatKitServer(ChatKitServer[dict]):
                 workflow_name = "Researcher Agent"
                 ),
                 context=agent_context,
+                hooks=ChatKitWorkflowHooks(),
             )
 
             async for event in stream_agent_response(agent_context, result):
