@@ -222,14 +222,6 @@ class ChatKitWorkflowHooks(RunHooks):
         context: Any,
     ) -> AgentContext | None:
 
-        """
-        Agents SDK lifecycle hooks receive a RunContextWrapper.
-
-        The actual ChatKit AgentContext is normally available as:
-
-            context.context
-        """
-
         inner_context = getattr(
             context,
             "context",
