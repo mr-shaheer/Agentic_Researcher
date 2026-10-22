@@ -26,7 +26,7 @@
 
 <div align="center">
 
-https://github.com/user-attachments/assets/3238c2f0-6674-4253-8054-ce444127b45f
+<video src="https://github.com/user-attachments/assets/3238c2f0-6674-4253-8054-ce444127b45f" controls muted width="800"></video>
 
 </div>
 
